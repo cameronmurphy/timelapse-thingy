@@ -2,11 +2,10 @@ Timelapse Thingy
 ================
 A script for taking a GoPro (or similar) batch of timelapse photos and grabbing frames from accompanying video.
 
-Requirements
+Install requirements
 ------------
-This script requires the Pillow library.
 ```
-pip install pillow
+pip install -r requirements.txt
 ```
 
 Usage
