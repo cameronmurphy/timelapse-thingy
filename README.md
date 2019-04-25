@@ -4,6 +4,7 @@ A script for taking a GoPro (or similar) batch of timelapse photos and grabbing 
 
 Install requirements
 ------------
+You will need ffmpeg. To install on macOS using Homebrew run `brew install ffmpeg`.
 ```
 pip install -r requirements.txt
 ```

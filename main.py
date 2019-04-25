@@ -6,6 +6,7 @@ import argparse
 import image
 import os
 import util
+import video
 
 
 INTERVAL_ROUND_TO = 10
@@ -17,13 +18,13 @@ OUTPUT_FORMAT = 'JPG'
 def main():
     args = _parse_args()
 
-    master_file_paths = util.get_files_sort_filename_asc(args.master_dir)
+    master_file_paths = util.get_file_paths_sort_filename_asc(args.master_dir)
     start_timestamp, interval_seconds = _resolve_start_timestamp_and_interval_seconds(master_file_paths)
 
-    _process(master_file_paths, start_timestamp, interval_seconds, args.output_dir)
+    _process(master_file_paths, args.slave_dirs, start_timestamp, interval_seconds, args.output_dir, args.slave_offset)
 
 
-def _process(master_files, start_timestamp, interval, output_dir):
+def _process(master_files, slave_dirs, start_timestamp, interval, output_dir, slave_offset):
     frame_cursor = 1
     master_file_count = len(master_files)
     master_file_cursor = 0
@@ -34,12 +35,12 @@ def _process(master_files, start_timestamp, interval, output_dir):
             current_image_timestamp = image.get_timestamp(current_image)
 
             if master_file_cursor > 0:
-                offset = util.date_diff_seconds(timestamp_cursor, current_image_timestamp)
+                variance = util.date_diff_seconds(timestamp_cursor, current_image_timestamp)
 
-                # Tolerance of interval - 1 means, for a timelapse where photos are taken every 30 seconds,
-                # if there's a gap in the timelapse, we will pick up the next available image when we've skipped enough
-                # frames to be within 29 seconds either side of our expectations.
-                if offset > interval - 1:
+                # Tolerance of interval - 1 means, for a timelapse where photos are taken every 30 seconds, of there's a
+                # gap in the timelapse, we will pick up the next available image when we've skipped enough frames to be
+                # within 29 seconds either side of our expectations.
+                if variance > interval - 1:
                     # Repeat the previous image while we're within a gap
                     master_file_cursor -= 1
                 else:
@@ -47,17 +48,28 @@ def _process(master_files, start_timestamp, interval, output_dir):
                     timestamp_cursor = current_image_timestamp
 
         _copy(frame_cursor, 1, master_files[master_file_cursor], output_dir)
-
-        # Resolve and dig into corresponding video files to grab accompanying frames
-        # If video frames are unavailable for a given time, repeat most recent images
+        _process_slaves(slave_dirs, timestamp_cursor + timedelta(seconds=slave_offset), output_dir)
+        break
 
         frame_cursor += 1
         master_file_cursor += 1
         timestamp_cursor += timedelta(seconds=interval)
 
 
-def _save(image_bytes, frame_index, source_index, src_filename, output_dir):
-    output_filename = _build_filename(frame_index, source_index, src_filename)
+def _process_slaves(slave_dirs, timestamp, output_dir):
+    for slave_dir in slave_dirs:
+        _process_slave(slave_dir, timestamp, output_dir)
+        break
+
+
+def _process_slave(slave_dir, timestamp, output_dir):
+    # Resolve and dig into corresponding video files to grab accompanying frames
+    # If video frames are unavailable for a given time, repeat most recent images
+    video.resolve_frame_from_videos(slave_dir, timestamp)
+
+
+def _save(image_bytes, frame_index, source_index, source_filename, output_dir):
+    output_filename = _build_filename(frame_index, source_index, source_filename)
     output_path = os.path.join(output_dir, output_filename)
 
     if not os.path.isdir(output_dir):
@@ -67,14 +79,14 @@ def _save(image_bytes, frame_index, source_index, src_filename, output_dir):
         output_file.write(image_bytes)
 
 
-def _copy(frame_index, source_index, src_path, output_dir):
-    output_filename = _build_filename(frame_index, source_index, os.path.basename(src_path))
+def _copy(frame_index, source_index, source_path, output_dir):
+    output_filename = _build_filename(frame_index, source_index, os.path.basename(source_path))
     output_path = os.path.join(output_dir, output_filename)
 
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
-    copyfile(src_path, output_path)
+    copyfile(source_path, output_path)
 
 
 def _build_filename(frame_index, source_index, filename):
@@ -114,6 +126,8 @@ def _parse_args():
     parser.add_argument('-o', '--output-dir', default='output', help='Output directory from processing')
     parser.add_argument('-s', '--slave-dirs', required=True, nargs='+',
                         help='The directories containing slave video content')
+    parser.add_argument('-f', '--slave-offset', type=int, default=0,
+                        help='Account for slave video being out of sync with master e.g. -130 seconds (behind)')
 
     return parser.parse_args()
 
