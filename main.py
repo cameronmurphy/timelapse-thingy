@@ -21,23 +21,40 @@ def main():
     master_file_paths = util.get_file_paths_sort_filename_asc(args.master_dir)
     start_timestamp, interval_seconds = _resolve_start_timestamp_and_interval_seconds(master_file_paths)
 
-    _process(master_file_paths, args.slave_dirs, start_timestamp, interval_seconds, args.output_dir, args.slave_offset)
+    _process(
+        master_file_paths,
+        start_timestamp,
+        interval_seconds,
+        args.output_dir,
+        args.slave_dirs,
+        args.slave_filename_date_regex,
+        args.slave_filename_date_format,
+        args.slave_offsets)
 
 
-def _process(master_files, slave_dirs, start_timestamp, interval, output_dir, slave_offset):
+def _process(
+        master_file_paths,
+        start_timestamp,
+        interval,
+        output_dir,
+        slave_dirs,
+        slave_filename_date_regex,
+        slave_filename_date_format,
+        slave_offsets):
+
     frame_cursor = 1
-    master_file_count = len(master_files)
+    master_file_count = len(master_file_paths)
     master_file_cursor = 0
     timestamp_cursor = start_timestamp
 
     while master_file_cursor < master_file_count:
-        with image.open_image(master_files[master_file_cursor]) as current_image:
+        with image.open_image(master_file_paths[master_file_cursor]) as current_image:
             current_image_timestamp = image.get_timestamp(current_image)
 
             if master_file_cursor > 0:
                 variance = util.date_diff_seconds(timestamp_cursor, current_image_timestamp)
 
-                # Tolerance of interval - 1 means, for a timelapse where photos are taken every 30 seconds, of there's a
+                # Tolerance of interval - 1 means, for a timelapse where photos are taken every 30 seconds, if there's a
                 # gap in the timelapse, we will pick up the next available image when we've skipped enough frames to be
                 # within 29 seconds either side of our expectations.
                 if variance > interval - 1:
@@ -47,29 +64,82 @@ def _process(master_files, slave_dirs, start_timestamp, interval, output_dir, sl
                     # Align with the new timestamp
                     timestamp_cursor = current_image_timestamp
 
-        _copy(frame_cursor, 1, master_files[master_file_cursor], output_dir)
-        _process_slaves(slave_dirs, timestamp_cursor + timedelta(seconds=slave_offset), output_dir)
-        break
+        _copy_file_to_output(frame_cursor, 1, master_file_paths[master_file_cursor], output_dir)
+        _process_slaves(
+            slave_dirs,
+            slave_offsets,
+            timestamp_cursor,
+            frame_cursor,
+            output_dir,
+            slave_filename_date_regex,
+            slave_filename_date_format)
 
         frame_cursor += 1
         master_file_cursor += 1
         timestamp_cursor += timedelta(seconds=interval)
 
 
-def _process_slaves(slave_dirs, timestamp, output_dir):
-    for slave_dir in slave_dirs:
-        _process_slave(slave_dir, timestamp, output_dir)
-        break
+def _process_slaves(
+        slave_dirs,
+        slave_offsets,
+        timestamp,
+        output_frame_index,
+        output_dir,
+        slave_filename_date_regex,
+        slave_filename_date_format):
+
+    for slave_index0, slave_dir in enumerate(slave_dirs):
+        slave_timestamp = timestamp
+
+        if len(slave_offsets) > slave_index0:
+            slave_timestamp += timedelta(seconds=slave_offsets[slave_index0])
+
+        _process_slave(
+            slave_index0 + 1,
+            slave_dir,
+            slave_timestamp,
+            output_frame_index,
+            output_dir,
+            slave_filename_date_regex,
+            slave_filename_date_format)
 
 
-def _process_slave(slave_dir, timestamp, output_dir):
-    # Resolve and dig into corresponding video files to grab accompanying frames
-    # If video frames are unavailable for a given time, repeat most recent images
-    video.resolve_frame_from_videos(slave_dir, timestamp)
+def _process_slave(
+        slave_index,
+        slave_dir,
+        timestamp,
+        output_frame_index,
+        output_dir,
+        slave_filename_date_regex,
+        slave_filename_date_format):
+
+    image_bytes, source_filename, source_frame_index = video.resolve_frame_from_videos(
+        slave_dir,
+        timestamp,
+        slave_filename_date_regex,
+        slave_filename_date_format)
+
+    if image_bytes is None:
+        _slave_fallback(slave_index, output_frame_index, output_dir)
+    else:
+        _write_to_output(
+            output_frame_index,
+            slave_index + 1,
+            image_bytes,
+            source_filename,
+            source_frame_index,
+            output_dir)
 
 
-def _save(image_bytes, frame_index, source_index, source_filename, output_dir):
-    output_filename = _build_filename(frame_index, source_index, source_filename)
+# Go and find the most recent frame for a given slave, repeat for current frame
+def _slave_fallback(slave_index, output_frame_index, output_dir):
+    for frame_index in range(output_frame_index - 1, 1):
+        print(frame_index)
+        # TODO - Find the previous frame for this source and repeat it.
+
+
+def _write_to_output(frame_index, source_index, image_bytes, source_filename, source_frame_index, output_dir):
+    output_filename = _build_output_filename(frame_index, source_index, source_filename, source_frame_index)
     output_path = os.path.join(output_dir, output_filename)
 
     if not os.path.isdir(output_dir):
@@ -79,8 +149,8 @@ def _save(image_bytes, frame_index, source_index, source_filename, output_dir):
         output_file.write(image_bytes)
 
 
-def _copy(frame_index, source_index, source_path, output_dir):
-    output_filename = _build_filename(frame_index, source_index, os.path.basename(source_path))
+def _copy_file_to_output(frame_index, source_index, source_path, output_dir):
+    output_filename = _build_output_filename(frame_index, source_index, os.path.basename(source_path))
     output_path = os.path.join(output_dir, output_filename)
 
     if not os.path.isdir(output_dir):
@@ -89,16 +159,21 @@ def _copy(frame_index, source_index, source_path, output_dir):
     copyfile(source_path, output_path)
 
 
-def _build_filename(frame_index, source_index, filename):
+def _build_output_filename(frame_index, source_index, filename, source_frame_index=None):
     frame_index_padded = str(frame_index).rjust(FRAME_INDEX_DIGITS, '0')
     source_index_padded = str(source_index).rjust(SOURCE_INDEX_DIGITS, '0')
     filename_without_extension = os.path.splitext(filename)[0]
 
-    return '_'.join((
+    filename = '_'.join((
         frame_index_padded,
         source_index_padded,
         filename_without_extension,
-    )) + '.' + OUTPUT_FORMAT
+    ))
+
+    if source_frame_index is not None:
+        filename = '_'.join([filename, str(source_frame_index)])
+
+    return '{}.{}'.format(filename, OUTPUT_FORMAT)
 
 
 # The first two images set the stage for the intervals this timelapse will be dealing with.
@@ -126,8 +201,12 @@ def _parse_args():
     parser.add_argument('-o', '--output-dir', default='output', help='Output directory from processing')
     parser.add_argument('-s', '--slave-dirs', required=True, nargs='+',
                         help='The directories containing slave video content')
-    parser.add_argument('-f', '--slave-offset', type=int, default=0,
-                        help='Account for slave video being out of sync with master e.g. -130 seconds (behind)')
+    parser.add_argument('-r', '--slave-filename-date-regex', default='^\\d{8}_\\d{6}',
+                        help='Regex used to match the date portion of the slave video filenames')
+    parser.add_argument('-f', '--slave-filename-date-format', default='%Y%m%d_%H%M%S',
+                        help='The date format within the slave video filenames')
+    parser.add_argument('-z', '--slave-offsets', type=int, nargs='+', default=[],
+                        help='Account for slave videos being out of sync with master (in seconds) e.g. -158 -159')
 
     return parser.parse_args()
 
