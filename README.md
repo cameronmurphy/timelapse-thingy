@@ -17,9 +17,8 @@ $ ./main.py --master-dir gopro --output-dir output --slave-dirs dashcam/front da
 
 This will run in alphabetic order through the images in the `gopro` directory. It detects the timelapse interval and
 then goes looking for the appropriate frames from the video files in the directories specified by `--slave-dirs`.
-If your device clocks weren't in perfect sync you can specify the difference with `--slave-offsets`. The resulting files
-in the `output` directory will look like this:
-
+If your device clocks weren't in perfect sync you can specify the difference in seconds with `--slave-offsets`. The
+resulting files in the `output` directory will look like this:
 ```
 0000001_01_G0030030.JPG                # GoPro image
 0000001_02_20190414_113821_PF_690.JPG  # Frame 690 from dashcam/front/20190414_113821_PF.mp4
@@ -38,7 +37,7 @@ last image it was able to locate.
 
 Note: The most reliable way to identify the timestamps of video files is parsing the filename. If the video filenames
 do not begin with a timestamp in `YYYYMMDD_HHmmss` format you can customise the date format e.g.
-`--slave-filename-date-format '%Y_%m_%d_%H_%M_%s`. You will also need to specify a different regular expression to match 
+`--slave-filename-date-format '%Y_%m_%d_%H_%M_%s'`. You will also need to specify a different regular expression to match 
 the date portion of the filename e.g. `--slave-filename-date-regex '^\\d{4}(?:_\\d{2}){5}'`. It's imperative your date
 format is in descending order of magnitude e.g. year then month then day as this ensures sorting the files
 alphabetically is identical to sorting the files by date 🍻. 
