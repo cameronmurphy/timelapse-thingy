@@ -43,6 +43,9 @@ def _process(
         slave_filename_date_format,
         slave_offsets):
 
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
     frame_cursor = 1
     master_file_count = len(master_file_paths)
     master_file_cursor = 0
@@ -159,9 +162,6 @@ def _write_to_output(frame_index, source_index, image_bytes, source_filename, so
     output_filename = _build_output_filename(frame_index, source_index, source_filename, source_frame_index)
     output_path = os.path.join(output_dir, output_filename)
 
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
-
     with open(output_path, 'w+b') as output_file:
         output_file.write(image_bytes)
 
@@ -169,9 +169,6 @@ def _write_to_output(frame_index, source_index, image_bytes, source_filename, so
 def _copy_file_to_output(frame_index, source_index, source_path, output_dir):
     output_filename = _build_output_filename(frame_index, source_index, os.path.basename(source_path))
     output_path = os.path.join(output_dir, output_filename)
-
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
 
     copyfile(source_path, output_path)
 
