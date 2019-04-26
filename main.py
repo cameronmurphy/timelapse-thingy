@@ -139,7 +139,7 @@ def _process_slave(
 # Go and find the most recent frame for a given slave, repeat for current frame
 def _slave_fallback(output_frame_index, source_index, output_dir):
     source_index_padded = str(source_index).rjust(SOURCE_INDEX_DIGITS, '0')
-    frame_index_padded = str(output_frame_index).rjust(FRAME_INDEX_DIGITS, '0')
+    output_frame_index_padded = str(output_frame_index).rjust(FRAME_INDEX_DIGITS, '0')
     fallback_frame_index_padded = str(output_frame_index - 1).rjust(FRAME_INDEX_DIGITS, '0')
     frame_glob = '_'.join([fallback_frame_index_padded, source_index_padded]) + '*'
     frame_file_paths = glob(os.path.join(output_dir, frame_glob))
@@ -151,7 +151,7 @@ def _slave_fallback(output_frame_index, source_index, output_dir):
 
     print('Falling back to {} for frame {} source {}'.format(fallback_frame_path, output_frame_index, source_index))
 
-    output_filename = frame_index_padded + os.path.basename(fallback_frame_path)[FRAME_INDEX_DIGITS:]
+    output_filename = output_frame_index_padded + os.path.basename(fallback_frame_path)[FRAME_INDEX_DIGITS:]
     copyfile(fallback_frame_path, os.path.join(output_dir, output_filename))
 
 
