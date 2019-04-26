@@ -4,6 +4,7 @@ from PIL.ExifTags import TAGS
 
 
 DATETIME_ORIGINAL_TAG_NAME = 'DateTimeOriginal'
+DATETIME_ORIGINAL_DATE_FORMAT = '%Y:%m:%d %H:%M:%S'
 
 
 def _get_exif_tag_code(tag_name):
@@ -25,4 +26,4 @@ def get_timestamp(image):
 
     datetime_original_value = image.info['parsed_exif'][datetime_original_tag_code]
 
-    return datetime.strptime(datetime_original_value, '%Y:%m:%d %H:%M:%S')
+    return datetime.strptime(datetime_original_value, DATETIME_ORIGINAL_DATE_FORMAT)
