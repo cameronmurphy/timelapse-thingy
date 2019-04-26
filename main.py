@@ -113,7 +113,7 @@ def _process_slave(
         output_dir,
         slave_filename_date_regex,
         slave_filename_date_format):
-    print('\n============== Processing frame {} for source {} ==============\n'.format(output_frame_index, slave_index))
+    print('\n============ Processing frame {} for source {} ============\n'.format(output_frame_index, slave_index + 1))
 
     image_bytes, source_filename, source_frame_index = video.resolve_frame_from_videos(
         slave_dir,
