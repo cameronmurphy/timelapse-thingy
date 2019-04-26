@@ -52,3 +52,5 @@ def resolve_frame_from_videos(path, timestamp, filename_date_regex, filename_dat
             raise RuntimeError('Error retrieving video frame: ' + err)
 
         return out, os.path.basename(video_file_path), seek_frame
+
+    return None, None, None

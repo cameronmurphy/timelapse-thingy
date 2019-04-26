@@ -34,14 +34,6 @@ def parse_date_from_filename(path, date_regex, date_format):
         return datetime.strptime(filename_timestamp_match.group(0), date_format)
 
 
-def resolve_first_file_match(path, regex):
-    file_paths = get_file_paths_sort_filename_asc(path)
-
-    for file_path in file_paths:
-        if re.match(regex, os.path.basename(file_path)):
-            return file_path
-
-
 def get_file_modified_timestamp(path):
     file_created_epoch = os.path.getmtime(path)
     return datetime.fromtimestamp(file_created_epoch)

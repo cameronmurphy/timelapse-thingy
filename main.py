@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from datetime import timedelta
+from glob import glob
 from shutil import copyfile
 import argparse
 import image
@@ -112,6 +113,7 @@ def _process_slave(
         output_dir,
         slave_filename_date_regex,
         slave_filename_date_format):
+    print('\n============== Processing frame {} for source {} ==============\n'.format(output_frame_index, slave_index))
 
     image_bytes, source_filename, source_frame_index = video.resolve_frame_from_videos(
         slave_dir,
@@ -119,8 +121,11 @@ def _process_slave(
         slave_filename_date_regex,
         slave_filename_date_format)
 
-    if image_bytes is None:
-        _slave_fallback(slave_index, output_frame_index, output_dir)
+    if image_bytes is not None and output_frame_index > 1:
+        if output_frame_index == 1:
+            raise RuntimeError('Cannot fall back on first frame of slave ' + slave_dir)
+
+        _slave_fallback(output_frame_index, slave_index + 1, output_dir)
     else:
         _write_to_output(
             output_frame_index,
@@ -132,10 +137,22 @@ def _process_slave(
 
 
 # Go and find the most recent frame for a given slave, repeat for current frame
-def _slave_fallback(slave_index, output_frame_index, output_dir):
-    for frame_index in range(output_frame_index - 1, 1):
-        print(frame_index)
-        # TODO - Find the previous frame for this source and repeat it.
+def _slave_fallback(output_frame_index, source_index, output_dir):
+    source_index_padded = str(source_index).rjust(SOURCE_INDEX_DIGITS, '0')
+    frame_index_padded = str(output_frame_index).rjust(FRAME_INDEX_DIGITS, '0')
+    fallback_frame_index_padded = str(output_frame_index - 1).rjust(FRAME_INDEX_DIGITS, '0')
+    frame_glob = '_'.join([fallback_frame_index_padded, source_index_padded]) + '*'
+    frame_file_paths = glob(os.path.join(output_dir, frame_glob))
+
+    if len(frame_file_paths) != 1:
+        raise RuntimeError('Unable to fall back for frame {} source {}'.format(output_frame_index, source_index))
+
+    fallback_frame_path = frame_file_paths[0]
+
+    print('Falling back to {} for frame {} source {}'.format(fallback_frame_path, output_frame_index, source_index))
+
+    output_filename = frame_index_padded + os.path.basename(fallback_frame_path)[FRAME_INDEX_DIGITS:]
+    copyfile(fallback_frame_path, os.path.join(output_dir, output_filename))
 
 
 def _write_to_output(frame_index, source_index, image_bytes, source_filename, source_frame_index, output_dir):
