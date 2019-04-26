@@ -121,7 +121,7 @@ def _process_slave(
         slave_filename_date_regex,
         slave_filename_date_format)
 
-    if image_bytes is not None and output_frame_index > 1:
+    if image_bytes is None:
         if output_frame_index == 1:
             raise RuntimeError('Cannot fall back on first frame of slave ' + slave_dir)
 
