@@ -25,8 +25,8 @@ resulting files in the `output` directory will look like this:
 0000001_03_20190414_113821_PR_660.JPG  # Frame 660 from dashcam/rear/20190414_113821_PR.mp4
 ...
 ```
-This allows you to composit frame `0000001` from the sources `01` (GoPro), `02` (forward facing dash cam) and
-`03` (rear facing dash cam) any way you'd like. That's just my use case anyway 🙃.
+This allows you to compose frame `0000001` from the sources `01` (GoPro), `02` (forward facing dash cam) and `03` (rear
+facing dash cam) any way you'd like. That's just my use case anyway 🙃.
 
 The script even allows for breaks in the GoPro timelapse (mine overheated and shutdown when we were parked 😒).
 The script will keep advancing through time by the detected interval until it finds the next timelapse image, repeating

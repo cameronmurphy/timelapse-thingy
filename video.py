@@ -40,6 +40,10 @@ def resolve_frame_from_videos(path, timestamp, filename_date_regex, filename_dat
 
     # Do we have enough frames to find the frame we're interested in?
     if int(video_stream['nb_frames']) >= seek_frame:
+        if int(video_stream['nb_frames']) == seek_frame:
+            # Retrieving the very last frame returns 0 bytes so retrieve the 2nd last frame
+            seek_frame -= 1
+
         out, err = (
             ffmpeg
             .input(video_file_path)
