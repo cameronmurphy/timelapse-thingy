@@ -37,7 +37,3 @@ def parse_date_from_filename(path, date_regex, date_format):
 def get_file_modified_timestamp(path):
     file_created_epoch = os.path.getmtime(path)
     return datetime.fromtimestamp(file_created_epoch)
-
-
-def date_diff_seconds(date_one, date_two):
-    return abs(date_one - date_two).seconds

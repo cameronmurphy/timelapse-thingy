@@ -1,25 +1,19 @@
 #!/usr/bin/env python3
 
+import argparse
+import os
 from datetime import timedelta
 from glob import glob
 from shutil import copyfile
-import argparse
-import image
-import os
-import util
-import video
 
-
-INTERVAL_ROUND_TO = 10
-FRAME_INDEX_DIGITS = 7
-SOURCE_INDEX_DIGITS = 2
-OUTPUT_FORMAT = 'JPG'
+import constants
+from util import date, fs, image, string, video
 
 
 def main():
     args = _parse_args()
 
-    master_file_paths = util.get_file_paths_sort_filename_asc(args.master_dir)
+    master_file_paths = fs.get_file_paths_sort_filename_asc(args.master_dir)
     start_timestamp, interval_seconds = _resolve_start_timestamp_and_interval_seconds(master_file_paths)
 
     _process(
@@ -56,7 +50,7 @@ def _process(
             current_image_timestamp = image.get_timestamp(current_image)
 
             if master_file_cursor > 0:
-                variance = util.date_diff_seconds(timestamp_cursor, current_image_timestamp)
+                variance = date.date_diff_seconds(timestamp_cursor, current_image_timestamp)
 
                 # Tolerance of interval - 1 means, for a timelapse where photos are taken every 30 seconds, if there's a
                 # gap in the timelapse, we will pick up the next available image when we've skipped enough frames to be
@@ -141,20 +135,21 @@ def _process_slave(
 
 # Go and find the most recent frame for a given slave, repeat for current frame
 def _slave_fallback(output_frame_index, source_index, output_dir):
-    source_index_padded = str(source_index).rjust(SOURCE_INDEX_DIGITS, '0')
-    output_frame_index_padded = str(output_frame_index).rjust(FRAME_INDEX_DIGITS, '0')
-    fallback_frame_index_padded = str(output_frame_index - 1).rjust(FRAME_INDEX_DIGITS, '0')
-    frame_glob = '_'.join([fallback_frame_index_padded, source_index_padded]) + '*'
+    source_index_padded = string.zero_pad(source_index, constants.SOURCE_INDEX_DIGITS)
+    output_frame_index_padded = string.zero_pad(output_frame_index, constants.FRAME_INDEX_DIGITS)
+    fallback_frame_index_padded = string.zero_pad(output_frame_index - 1, constants.FRAME_INDEX_DIGITS)
+
+    frame_glob = '{}_{}_*'.format(fallback_frame_index_padded, source_index_padded)
     frame_file_paths = glob(os.path.join(output_dir, frame_glob))
 
     if len(frame_file_paths) != 1:
-        raise RuntimeError('Unable to fall back for frame {} source {}'.format(output_frame_index, source_index))
+        raise RuntimeError('Unable to fallback for frame {} source {}'.format(output_frame_index, source_index))
 
     fallback_frame_path = frame_file_paths[0]
 
     print('Falling back to {} for frame {} source {}'.format(fallback_frame_path, output_frame_index, source_index))
 
-    output_filename = output_frame_index_padded + os.path.basename(fallback_frame_path)[FRAME_INDEX_DIGITS:]
+    output_filename = output_frame_index_padded + os.path.basename(fallback_frame_path)[constants.FRAME_INDEX_DIGITS:]
     copyfile(fallback_frame_path, os.path.join(output_dir, output_filename))
 
 
@@ -174,8 +169,8 @@ def _copy_file_to_output(frame_index, source_index, source_path, output_dir):
 
 
 def _build_output_filename(frame_index, source_index, filename, source_frame_index=None):
-    frame_index_padded = str(frame_index).rjust(FRAME_INDEX_DIGITS, '0')
-    source_index_padded = str(source_index).rjust(SOURCE_INDEX_DIGITS, '0')
+    frame_index_padded = string.zero_pad(frame_index, constants.FRAME_INDEX_DIGITS)
+    source_index_padded = string.zero_pad(source_index, constants.SOURCE_INDEX_DIGITS)
     filename_without_extension = os.path.splitext(filename)[0]
 
     filename = '_'.join((
@@ -187,7 +182,7 @@ def _build_output_filename(frame_index, source_index, filename, source_frame_ind
     if source_frame_index is not None:
         filename = '_'.join([filename, str(source_frame_index)])
 
-    return '{}.{}'.format(filename, OUTPUT_FORMAT)
+    return '{}.{}'.format(filename, constants.OUTPUT_FORMAT)
 
 
 # The first two images set the stage for the intervals this timelapse will be dealing with.
@@ -201,12 +196,12 @@ def _resolve_start_timestamp_and_interval_seconds(master_file_paths):
     first_datetime = image.get_timestamp(first_image)
     second_datetime = image.get_timestamp(second_image)
 
-    diff_seconds = util.date_diff_seconds(first_datetime, second_datetime)
+    diff_seconds = date.date_diff_seconds(first_datetime, second_datetime)
 
     first_image.close()
     second_image.close()
 
-    return first_datetime, INTERVAL_ROUND_TO * round(diff_seconds/INTERVAL_ROUND_TO)
+    return first_datetime, constants.INTERVAL_ROUND_TO * round(diff_seconds/constants.INTERVAL_ROUND_TO)
 
 
 def _parse_args():
