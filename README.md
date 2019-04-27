@@ -51,7 +51,7 @@ alphabetically is identical to sorting the files by date 🍻.
 
 Compose
 -------
-This script takes your output frames (written by `scrape.py` or otherwise) and compiles them into output frame images
+This script takes your source images (written by `scrape.py` or otherwise) and compiles them into output frame images
 using the `montage` tool from ImageMagick.
 ```
 $ timelapse-thingy/compose.py --input-dir scrape-output --output-dir compile-output
@@ -63,7 +63,7 @@ source 03 (dash cam rear) in the top right, source 01 (GoPro) in the bottom left
 
 Tip: my GoPro outputs 4000 x 3000 images so I used this command to convert the GoPro (source 01) images to 16:9.
 ```
-find scrape-output -name '*_01_*' -exec convert {} -distort SRT 1,0 -gravity center -crop 4000x2250+0+0 +repage {} \;
+$ find scrape-output -name '*_01_*' -exec convert {} -distort SRT 1,0 -gravity center -crop 4000x2250+0+0 +repage {} \;
 ```
-You don't need to do this prior to running `compose` but if you leave images at 4x3 aspect ratio there will be black
-bars either side of your images in the composed frames.
+This isn't mandatory but if you leave images at 4x3 aspect ratio there will be black bars either side of your images in
+the composed frames.
