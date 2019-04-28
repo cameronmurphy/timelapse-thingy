@@ -3,6 +3,7 @@
 import argparse
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
 from glob import glob
 from shutil import copyfile
 
@@ -11,6 +12,7 @@ from util import date, fs, image, string, video
 
 def main():
     args = _parse_args()
+    load_dotenv()
 
     master_file_paths = fs.get_file_paths_sort_filename_asc(args.master_dir)
     start_timestamp, interval_seconds = _resolve_start_timestamp_and_interval_seconds(master_file_paths)
