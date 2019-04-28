@@ -3,16 +3,16 @@
 import argparse
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
 from glob import glob
 from shutil import copyfile
 
+import config
 from util import date, fs, image, string, video
 
 
 def main():
     args = _parse_args()
-    load_dotenv()
+    config.load()
 
     master_file_paths = fs.get_file_paths_sort_filename_asc(args.master_dir)
     start_timestamp, interval_seconds = _resolve_start_timestamp_and_interval_seconds(master_file_paths)
@@ -47,6 +47,8 @@ def _process(
     timestamp_cursor = start_timestamp
 
     while master_file_cursor < master_file_count:
+        _print_processing_heading(frame_cursor, 1)
+
         with image.open_image(master_file_paths[master_file_cursor]) as current_image:
             current_image_timestamp = image.get_timestamp(current_image)
 
@@ -59,6 +61,7 @@ def _process(
                 if variance > interval - 1:
                     # Repeat the previous image while we're within a gap
                     master_file_cursor -= 1
+                    _print_fallback_message(master_file_paths[master_file_cursor])
                 else:
                     # Align with the new timestamp
                     timestamp_cursor = current_image_timestamp
@@ -111,7 +114,7 @@ def _process_slave(
         output_dir,
         slave_filename_date_regex,
         slave_filename_date_format):
-    print('\n============ Processing frame {} for source {} ============\n'.format(output_frame_index, slave_index + 1))
+    _print_processing_heading(output_frame_index, slave_index + 1)
 
     image_bytes, source_filename, source_frame_index = video.resolve_frame_from_videos(
         slave_dir,
@@ -136,24 +139,19 @@ def _process_slave(
 
 # Go and find the most recent frame for a given slave, repeat for current frame
 def _slave_fallback(output_frame_index, source_index, output_dir):
-    source_index_digits = int(os.getenv('SOURCE_INDEX_DIGITS'))
-    frame_index_digits = int(os.getenv('FRAME_INDEX_DIGITS'))
+    source_index_padded = string.zero_pad(source_index, config.source_index_digits)
+    output_frame_index_padded = string.zero_pad(output_frame_index, config.frame_index_digits)
+    fallback_frame_index_padded = string.zero_pad(output_frame_index - 1, config.frame_index_digits)
 
-    source_index_padded = string.zero_pad(source_index, source_index_digits)
-    output_frame_index_padded = string.zero_pad(output_frame_index, frame_index_digits)
-    fallback_frame_index_padded = string.zero_pad(output_frame_index - 1, frame_index_digits)
+    fallback_image_glob = '{}_{}_*'.format(fallback_frame_index_padded, source_index_padded)
+    fallback_image_paths = glob(os.path.join(output_dir, fallback_image_glob))
 
-    frame_glob = '{}_{}_*'.format(fallback_frame_index_padded, source_index_padded)
-    frame_file_paths = glob(os.path.join(output_dir, frame_glob))
-
-    if len(frame_file_paths) != 1:
+    if len(fallback_image_paths) != 1:
         raise RuntimeError('Unable to fallback for frame {} source {}'.format(output_frame_index, source_index))
 
-    fallback_frame_path = frame_file_paths[0]
-
-    print('Falling back to {} for frame {} source {}'.format(fallback_frame_path, output_frame_index, source_index))
-
-    output_filename = output_frame_index_padded + os.path.basename(fallback_frame_path)[frame_index_digits:]
+    fallback_frame_path = fallback_image_paths[0]
+    _print_fallback_message(fallback_frame_path)
+    output_filename = output_frame_index_padded + os.path.basename(fallback_frame_path)[config.frame_index_digits:]
     copyfile(fallback_frame_path, os.path.join(output_dir, output_filename))
 
 
@@ -173,11 +171,8 @@ def _copy_file_to_output(frame_index, source_index, source_path, output_dir):
 
 
 def _build_output_filename(frame_index, source_index, filename, source_frame_index=None):
-    frame_index_digits = int(os.getenv('FRAME_INDEX_DIGITS'))
-    source_index_digits = int(os.getenv('SOURCE_INDEX_DIGITS'))
-
-    frame_index_padded = string.zero_pad(frame_index, frame_index_digits)
-    source_index_padded = string.zero_pad(source_index, source_index_digits)
+    frame_index_padded = string.zero_pad(frame_index, config.frame_index_digits)
+    source_index_padded = string.zero_pad(source_index, config.source_index_digits)
     filename_without_extension = os.path.splitext(filename)[0]
 
     filename = '_'.join((
@@ -210,6 +205,19 @@ def _resolve_start_timestamp_and_interval_seconds(master_file_paths):
     second_image.close()
 
     return first_datetime, interval_round_to * round(diff_seconds/interval_round_to)
+
+
+def _print_processing_heading(frame_index, source_index):
+    print(
+        '\n================================ Processing frame {} for source {} ================================'.format(
+            string.zero_pad(frame_index, config.frame_index_digits),
+            string.zero_pad(source_index, config.source_index_digits)
+        )
+    )
+
+
+def _print_fallback_message(fallback_image_path):
+    print('Falling back to ' + fallback_image_path)
 
 
 def _parse_args():

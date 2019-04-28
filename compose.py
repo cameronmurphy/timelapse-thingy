@@ -3,18 +3,15 @@
 import argparse
 import os
 import subprocess
-from dotenv import load_dotenv
 from glob import glob
 
+import config
 from util import timelapse, string
 
 
 def main():
     args = _parse_args()
-    load_dotenv()
-
-    montage_arglist = eval(os.getenv('MONTAGE_ARG_LIST'))
-    montage_source_order_dict = eval(os.getenv('MONTAGE_SOURCE_ORDER_DICT'))
+    config.load()
 
     if not os.path.isdir(args.output_dir):
         os.mkdir(args.output_dir)
@@ -25,19 +22,19 @@ def main():
     for frame_index in range(1, frame_count + 1):
         sources = [''] * source_count
 
-        frame_index_padded = string.zero_pad(frame_index, int(os.getenv('FRAME_INDEX_DIGITS')))
+        frame_index_padded = string.zero_pad(frame_index, config.frame_index_digits)
         files_glob = os.path.join(args.input_dir, '{}_*'.format(frame_index_padded))
         file_paths = glob(files_glob)
 
         for file_path in file_paths:
             frame_index, source_index = timelapse.parse_frame_index_and_source_index(os.path.basename(file_path))
-            sources[montage_source_order_dict[source_index] - 1] = file_path
+            sources[config.montage_source_order_dict[source_index] - 1] = file_path
 
-        print('Building frame ' + str(frame_index))
+        print('Building frame ' + frame_index_padded)
 
-        output_filename = '{}.{}'.format(frame_index_padded, os.getenv('OUTPUT_FORMAT'))
+        output_filename = '{}.{}'.format(frame_index_padded, config.output_format)
         output_path = os.path.join(args.output_dir, output_filename)
-        command = ['montage'] + sources + montage_arglist + [output_path]
+        command = ['montage'] + sources + config.montage_arg_list + [output_path]
 
         process = subprocess.Popen(command)
         processes.append(process)
@@ -48,8 +45,8 @@ def main():
 
 def _parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--input-dir', required=True, help='Directory containing the timelapse images')
-    parser.add_argument('-o', '--output-dir', default='output', help='Output directory from processing')
+    parser.add_argument('-m', '--input-dir', required=True, help='Directory containing source images')
+    parser.add_argument('-o', '--output-dir', default='output', help='Output directory from composed frames')
 
     return parser.parse_args()
 
