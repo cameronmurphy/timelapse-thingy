@@ -13,7 +13,7 @@ def main():
     args = _parse_args()
     load_dotenv()
 
-    montage_args = eval(os.getenv('MONTAGE_ARGS'))
+    montage_arglist = eval(os.getenv('MONTAGE_ARG_LIST'))
     montage_source_order_dict = eval(os.getenv('MONTAGE_SOURCE_ORDER_DICT'))
 
     if not os.path.isdir(args.output_dir):
@@ -37,7 +37,7 @@ def main():
 
         output_filename = '{}.{}'.format(frame_index_padded, os.getenv('OUTPUT_FORMAT'))
         output_path = os.path.join(args.output_dir, output_filename)
-        command = ['montage'] + sources + montage_args + [output_path]
+        command = ['montage'] + sources + montage_arglist + [output_path]
 
         process = subprocess.Popen(command)
         processes.append(process)
