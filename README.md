@@ -10,6 +10,10 @@ You will need ffmpeg and ImageMagick. To install on macOS using Homebrew run `br
 pip install -r requirements.txt
 ```
 
+Environment
+-----------
+Suggested configuration values are in `.env.dist`. Run `cp .env.dist .env` before running the scripts below.
+
 Scrape
 ------
 This script scrapes frames from your 'slave' video sources.
@@ -56,12 +60,12 @@ using the `montage` tool from ImageMagick.
 ```
 $ timelapse-thingy/compose.py --input-dir scrape-output --output-dir compose-output
 ```
-By default, based on the `MONTAGE_ARGS` and `MONTAGE_SOURCE_ORDER_DICT` constants in `constants.py`, this builds 4K
+By default, based on the default `MONTAGE_ARGS` and `MONTAGE_SOURCE_ORDER_DICT` values in `.env`, this builds 4K
 (3840x2160) frames with a 2x2 grid of images sized to 1920x1080. For me, this put source 02 (dash cam front) in the top
 left, source 03 (dash cam rear) in the top right, source 01 (GoPro) in the bottom left and source 04 (a custom generated
-frame) in the bottom right by feel free to tweak it 🐫.
+frame) in the bottom right but feel free to tweak it 🐫.
 
-Tip: my GoPro outputs 4000 x 3000 images so I used this command to convert the GoPro (source 01) images to 16:9.
+Tip: my GoPro outputs 4000x3000 images so I used this command to convert the GoPro (source 01) images to 16:9.
 ```
 $ find scrape-output -name '*_01_*' -exec convert {} -distort SRT 1,0 -gravity center -crop 4000x2250+0+0 +repage {} \;
 ```

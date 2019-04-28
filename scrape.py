@@ -6,7 +6,6 @@ from datetime import timedelta
 from glob import glob
 from shutil import copyfile
 
-import constants
 from util import date, fs, image, string, video
 
 
@@ -135,9 +134,12 @@ def _process_slave(
 
 # Go and find the most recent frame for a given slave, repeat for current frame
 def _slave_fallback(output_frame_index, source_index, output_dir):
-    source_index_padded = string.zero_pad(source_index, constants.SOURCE_INDEX_DIGITS)
-    output_frame_index_padded = string.zero_pad(output_frame_index, constants.FRAME_INDEX_DIGITS)
-    fallback_frame_index_padded = string.zero_pad(output_frame_index - 1, constants.FRAME_INDEX_DIGITS)
+    source_index_digits = int(os.getenv('SOURCE_INDEX_DIGITS'))
+    frame_index_digits = int(os.getenv('FRAME_INDEX_DIGITS'))
+
+    source_index_padded = string.zero_pad(source_index, source_index_digits)
+    output_frame_index_padded = string.zero_pad(output_frame_index, frame_index_digits)
+    fallback_frame_index_padded = string.zero_pad(output_frame_index - 1, frame_index_digits)
 
     frame_glob = '{}_{}_*'.format(fallback_frame_index_padded, source_index_padded)
     frame_file_paths = glob(os.path.join(output_dir, frame_glob))
@@ -149,7 +151,7 @@ def _slave_fallback(output_frame_index, source_index, output_dir):
 
     print('Falling back to {} for frame {} source {}'.format(fallback_frame_path, output_frame_index, source_index))
 
-    output_filename = output_frame_index_padded + os.path.basename(fallback_frame_path)[constants.FRAME_INDEX_DIGITS:]
+    output_filename = output_frame_index_padded + os.path.basename(fallback_frame_path)[frame_index_digits:]
     copyfile(fallback_frame_path, os.path.join(output_dir, output_filename))
 
 
@@ -169,8 +171,11 @@ def _copy_file_to_output(frame_index, source_index, source_path, output_dir):
 
 
 def _build_output_filename(frame_index, source_index, filename, source_frame_index=None):
-    frame_index_padded = string.zero_pad(frame_index, constants.FRAME_INDEX_DIGITS)
-    source_index_padded = string.zero_pad(source_index, constants.SOURCE_INDEX_DIGITS)
+    frame_index_digits = int(os.getenv('FRAME_INDEX_DIGITS'))
+    source_index_digits = int(os.getenv('SOURCE_INDEX_DIGITS'))
+
+    frame_index_padded = string.zero_pad(frame_index, frame_index_digits)
+    source_index_padded = string.zero_pad(source_index, source_index_digits)
     filename_without_extension = os.path.splitext(filename)[0]
 
     filename = '_'.join((
@@ -182,12 +187,13 @@ def _build_output_filename(frame_index, source_index, filename, source_frame_ind
     if source_frame_index is not None:
         filename = '_'.join([filename, str(source_frame_index)])
 
-    return '{}.{}'.format(filename, constants.OUTPUT_FORMAT)
+    return '{}.{}'.format(filename, os.getenv('OUTPUT_FORMAT'))
 
 
 # The first two images set the stage for the intervals this timelapse will be dealing with.
 # This method diffs the duration in seconds between the first two photos and rounds to INTERVAL_ROUND_TO
 def _resolve_start_timestamp_and_interval_seconds(master_file_paths):
+    interval_round_to = int(os.getenv('INTERVAL_ROUND_TO'))
     first_image_path, second_image_path = master_file_paths[:2]
 
     first_image = image.open_image(first_image_path)
@@ -201,7 +207,7 @@ def _resolve_start_timestamp_and_interval_seconds(master_file_paths):
     first_image.close()
     second_image.close()
 
-    return first_datetime, constants.INTERVAL_ROUND_TO * round(diff_seconds/constants.INTERVAL_ROUND_TO)
+    return first_datetime, interval_round_to * round(diff_seconds/interval_round_to)
 
 
 def _parse_args():

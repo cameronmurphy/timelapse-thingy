@@ -1,6 +1,7 @@
 import ffmpeg
 import os
-import util
+
+from util import fs
 
 
 def _get_first_video_stream(video_info):
@@ -11,16 +12,16 @@ def _get_first_video_stream(video_info):
 
 
 def resolve_frame_from_videos(path, timestamp, filename_date_regex, filename_date_format):
-    video_file_path = util.resolve_latest_file_by_filename_timestamp(
+    video_file_path = fs.resolve_latest_file_by_filename_timestamp(
         path,
         timestamp,
         filename_date_regex,
         filename_date_format)
-    video_timestamp = util.parse_date_from_filename(video_file_path, filename_date_regex, filename_date_format)
 
     if video_file_path is None:
         raise RuntimeError('No appropriate video file found in ' + path)
 
+    video_timestamp = fs.parse_date_from_filename(video_file_path, filename_date_regex, filename_date_format)
     video_info = ffmpeg.probe(video_file_path)
     video_stream = _get_first_video_stream(video_info)
 
@@ -37,10 +38,11 @@ def resolve_frame_from_videos(path, timestamp, filename_date_regex, filename_dat
     frame_rate = round(eval(video_stream['avg_frame_rate']))
     seek_seconds = (timestamp - video_timestamp).seconds
     seek_frame = frame_rate * seek_seconds
+    frame_count = int(video_stream['nb_frames'])
 
     # Do we have enough frames to find the frame we're interested in?
-    if int(video_stream['nb_frames']) >= seek_frame:
-        if int(video_stream['nb_frames']) == seek_frame:
+    if frame_count >= seek_frame:
+        if frame_count == seek_frame:
             # Retrieving the very last frame returns 0 bytes so retrieve the 2nd last frame
             seek_frame -= 1
 

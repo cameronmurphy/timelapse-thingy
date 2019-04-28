@@ -1,12 +1,11 @@
 import os
 import re
 
-import constants
 from util import fs
 
 
 def parse_frame_index_and_source_index(filename):
-    regex = '^(\\d{{{}}})_(\\d{{{}}})'.format(constants.FRAME_INDEX_DIGITS, constants.SOURCE_INDEX_DIGITS)
+    regex = '^(\\d{{{}}})_(\\d{{{}}})'.format(os.getenv('FRAME_INDEX_DIGITS'), os.getenv('SOURCE_INDEX_DIGITS'))
     match = re.match(regex, filename)
 
     if match is not None:
