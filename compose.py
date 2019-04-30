@@ -17,7 +17,6 @@ def main():
         os.mkdir(args.output_dir)
 
     frame_count, source_count = timelapse.resolve_frame_count_and_source_count(args.input_dir)
-    processes = []
 
     for frame_index in range(1, frame_count + 1):
         sources = [''] * source_count
@@ -35,12 +34,7 @@ def main():
         output_filename = '{}.{}'.format(frame_index_padded, config.output_format)
         output_path = os.path.join(args.output_dir, output_filename)
         command = ['montage'] + sources + config.montage_arg_list + [output_path]
-
-        process = subprocess.Popen(command)
-        processes.append(process)
-
-    for process in processes:
-        process.wait()
+        subprocess.call(command)
 
 
 def _parse_args():

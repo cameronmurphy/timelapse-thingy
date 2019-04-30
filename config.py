@@ -8,6 +8,8 @@ interval_round_to = None
 montage_arg_list = None
 montage_source_order_dict = None
 bing_maps_api_key = None
+map_type = None
+map_format = None
 map_zoom = None
 map_centre_coord_dict = None
 map_dimensions_dict = None
@@ -25,6 +27,8 @@ def load():
     global montage_arg_list
     global montage_source_order_dict
     global bing_maps_api_key
+    global map_type
+    global map_format
     global map_zoom
     global map_centre_coord_dict
     global map_dimensions_dict
@@ -38,6 +42,8 @@ def load():
     montage_arg_list = eval(os.getenv('MONTAGE_ARG_LIST'))
     montage_source_order_dict = eval(os.getenv('MONTAGE_SOURCE_ORDER_DICT'))
     bing_maps_api_key = os.getenv('BING_MAPS_API_KEY')
+    map_type = os.getenv('MAP_TYPE')
+    map_format = os.getenv('MAP_FORMAT')
     map_zoom = int(os.getenv('MAP_ZOOM'))
     map_centre_coord_dict = eval(os.getenv('MAP_CENTRE_COORDS_DICT'))
     map_dimensions_dict = eval(os.getenv('MAP_DIMENSIONS_DICT'))

@@ -16,7 +16,7 @@ Suggested configuration values are in `.env.dist`. Run `cp .env.dist .env` befor
 
 Scrape
 ------
-This script scrapes frames from your 'slave' video sources.
+This script scrapes images from your 'slave' video sources.
 
 ```
 $ timelapse-thingy/scrape.py --master-dir gopro --output-dir scrape-output --slave-dirs dashcam/front dashcam/rear --slave-offsets -159 -160
@@ -53,10 +53,13 @@ match the date portion of the filename e.g. `--slave-filename-date-regex '^\\d{4
 date format is in descending order of magnitude e.g. year then month then day as this ensures sorting the files
 alphabetically is identical to sorting the files by date 🍻. 
 
-Build map frames
+Build map images
 ----------------
-This script uses the Bing Maps API to build out custom frames with the the current position pinned.
- 
+This script uses the Bing Maps API to build out custom source images with an indicator of the current position.
+Optionally, custom push pins can be added to the map via the `MAP_PUSH_PIN_DICT_LIST` config.
+```
+$ timelapse-thingy/build_map_images.py --working-dir scrape-output --input-source-index 1 --output-source-index 4
+```
 
 Compose
 -------
@@ -68,7 +71,7 @@ $ timelapse-thingy/compose.py --input-dir scrape-output --output-dir compose-out
 Based on the default `MONTAGE_ARG_LIST` value in `.env`, this builds 4K (3840x2160) frames with a 2x2 grid of images
 sized to 1920x1080. The default `MONTAGE_SOURCE_ORDER_DICT` value puts source 02 (dash cam front) in the top left,
 source 03 (dash cam rear) in the top right, source 01 (GoPro) in the bottom left and source 04 (a custom generated
-frame) in the bottom right but feel free to tweak it 🐫.
+map image) in the bottom right but feel free to tweak it 🐫.
 
 Tip: my GoPro outputs 4000x3000 images so I used this command to convert the GoPro (source 01) images to 16:9.
 ```
