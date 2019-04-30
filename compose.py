@@ -30,7 +30,7 @@ def main():
             frame_index, source_index = timelapse.parse_frame_index_and_source_index(os.path.basename(file_path))
             sources[config.montage_source_order_dict[source_index] - 1] = file_path
 
-        print('Building frame ' + frame_index_padded)
+        print('Composing frame ' + frame_index_padded)
 
         output_filename = '{}.{}'.format(frame_index_padded, config.output_format)
         output_path = os.path.join(args.output_dir, output_filename)

@@ -1,10 +1,10 @@
 Timelapse Thingy
 ================
-Some scripts for taking source material from a timelapse camera such as a GoPro and video cameras such as dash cams and
-building out a video like [this](todo://linkme).
+Some python3 scripts for taking source material from a timelapse camera such as a GoPro and video cameras such as dash
+cams and building out a video like [this](todo://linkme).
 
 Install requirements
-------------
+--------------------
 You will need ffmpeg and ImageMagick. To install on macOS using Homebrew run `brew install ffmpeg imagemagick`.
 ```
 pip install -r requirements.txt
@@ -52,6 +52,11 @@ do not begin with a timestamp in `YYYYMMDD_HHmmss` format you can customise the 
 match the date portion of the filename e.g. `--slave-filename-date-regex '^\\d{4}(?:_\\d{2}){5}'`. It's imperative your
 date format is in descending order of magnitude e.g. year then month then day as this ensures sorting the files
 alphabetically is identical to sorting the files by date 🍻. 
+
+Build map frames
+----------------
+This script uses the Bing Maps API to build out custom frames with the the current position pinned.
+ 
 
 Compose
 -------

@@ -184,13 +184,12 @@ def _build_output_filename(frame_index, source_index, filename, source_frame_ind
     if source_frame_index is not None:
         filename = '_'.join([filename, str(source_frame_index)])
 
-    return '{}.{}'.format(filename, os.getenv('OUTPUT_FORMAT'))
+    return '{}.{}'.format(filename, config.output_format)
 
 
 # The first two images set the stage for the intervals this timelapse will be dealing with.
 # This method diffs the duration in seconds between the first two photos and rounds to INTERVAL_ROUND_TO
 def _resolve_start_timestamp_and_interval_seconds(master_file_paths):
-    interval_round_to = int(os.getenv('INTERVAL_ROUND_TO'))
     first_image_path, second_image_path = master_file_paths[:2]
 
     first_image = image.open_image(first_image_path)
@@ -204,7 +203,7 @@ def _resolve_start_timestamp_and_interval_seconds(master_file_paths):
     first_image.close()
     second_image.close()
 
-    return first_datetime, interval_round_to * round(diff_seconds/interval_round_to)
+    return first_datetime, config.interval_round_to * round(diff_seconds/config.interval_round_to)
 
 
 def _print_processing_heading(frame_index, source_index):
