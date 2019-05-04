@@ -1,7 +1,7 @@
 Timelapse Thingy
 ================
 Some python3 scripts for taking source material from a timelapse camera such as a GoPro and video cameras such as dash
-cams and building out a video like [this](todo://linkme).
+cams and building out a video like [this](https://youtu.be/QnFtO26yiQ4).
 
 Install requirements
 --------------------
